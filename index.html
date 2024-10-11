@@ -6,36 +6,57 @@
     <title>Scanner de codes-barres</title>
     <style>
         body {
-            font-family: Arial, sans-serif;
+            font-family: 'Arial', sans-serif;
             margin: 0;
             padding: 0;
             display: flex;
             flex-direction: column;
             align-items: center;
             justify-content: center;
+            background-color: #f0f4f8;
+            color: #333;
         }
 
         header {
             text-align: center;
-            margin-bottom: 20px;
+            margin-bottom: 30px;
+        }
+
+        header img {
+            width: 250px;
+            height: auto;
+            margin-bottom: 15px;
+        }
+
+        h1 {
+            font-size: 2.5rem;
+            color: #007bff;
+            margin: 0;
         }
 
         #csv-container, #scan-result {
-            border: 2px solid #ccc;
+            border: 2px solid #007bff;
+            border-radius: 8px;
             margin: 20px;
-            padding: 10px;
+            padding: 15px;
             width: 90%;
+            max-width: 600px;
             height: 200px;
             overflow-y: auto;
-            resize: vertical;
-            background-color: #f9f9f9;
+            background-color: #ffffff;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
         }
 
         #camera-container {
             width: 90%;
+            max-width: 600px;
             height: 300px;
             margin: 20px;
             display: none;
+            position: relative;
+            overflow: hidden;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
         }
 
         #camera {
@@ -50,23 +71,47 @@
             background-color: #007bff;
             color: white;
             border: none;
+            border-radius: 5px;
             cursor: pointer;
             font-size: 16px;
+            transition: background-color 0.3s;
+        }
+
+        button:hover {
+            background-color: #0056b3;
         }
 
         .orange-highlight {
             background-color: orange;
+            color: #fff;
+            font-weight: bold;
+            padding: 5px;
+            border-radius: 5px;
+        }
+
+        .button-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        @media (min-width: 600px) {
+            .button-container {
+                flex-direction: row;
+                justify-content: space-around;
+            }
         }
     </style>
 </head>
 <body>
 
     <header>
-        <img src="https://groupebanco.com/wp-content/uploads/2020/10/logo_banco-300x71.png" alt="Logo Banco" style="width: 300px; height: auto;">
+        <img src="https://groupebanco.com/wp-content/uploads/2020/10/logo_banco-300x71.png" alt="Logo Banco">
         <h1>Scanner de codes-barres</h1>
     </header>
 
-    <input type="file" id="csv-input" accept=".csv">
+    <input type="file" id="csv-input" accept=".csv" style="margin: 20px; padding: 10px; font-size: 16px;">
+
     <div id="csv-container">Le contenu du fichier CSV sera affiché ici.</div>
 
     <div id="camera-container">
@@ -76,9 +121,11 @@
 
     <div id="scan-result">Les résultats des scans seront affichés ici.</div>
 
-    <button id="report-found-btn">Rapport des objets trouvés</button>
-    <button id="report-not-found-btn">Rapport des objets non trouvés</button>
-    <button id="report-extra-btn">Rapport des objets non présents dans le CSV</button>
+    <div class="button-container">
+        <button id="report-found-btn">Rapport des objets trouvés</button>
+        <button id="report-not-found-btn">Rapport des objets non trouvés</button>
+        <button id="report-extra-btn">Rapport des objets non présents dans le CSV</button>
+    </div>
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.4.0/jspdf.umd.min.js"></script>
     <script src="https://unpkg.com/@zxing/library@latest"></script>
