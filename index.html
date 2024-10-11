@@ -76,6 +76,7 @@
     <script>
         let csvData = [];
         let scannedCodes = [];
+        let notFoundCodes = [];
 
         document.getElementById('csv-input').addEventListener('change', function(event) {
             const file = event.target.files[0];
@@ -125,17 +126,39 @@
             } else {
                 resultDiv.textContent = `Code-barres non trouvé: ${code}`;
                 resultDiv.classList.add('orange-highlight');
+                notFoundCodes.push([code]);
             }
             scanResultContainer.appendChild(resultDiv);
         }
 
+        function generateCSV(contentArray, filename) {
+            const csvContent = contentArray.map(e => e.join(",")).join("\n");
+            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement("a");
+
+            if (link.download !== undefined) {
+                const url = URL.createObjectURL(blob);
+                link.setAttribute("href", url);
+                link.setAttribute("download", filename);
+                link.style.visibility = 'hidden';
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+            }
+        }
+
         document.getElementById('report-found-btn').addEventListener('click', function() {
-            generateReport(scannedCodes);
+            generateCSV(scannedCodes, 'rapport_objets_trouves.csv');
         });
 
-        function generateReport(data) {
-            // Générer un fichier CSV à partir des objets trouvés (ou non trouvés).
-        }
+        document.getElementById('report-not-found-btn').addEventListener('click', function() {
+            const missingCodes = csvData.filter(row => !scannedCodes.some(scanned => scanned[0] === row[0]));
+            generateCSV(missingCodes, 'rapport_objets_non_trouves.csv');
+        });
+
+        document.getElementById('report-extra-btn').addEventListener('click', function() {
+            generateCSV(notFoundCodes, 'rapport_objets_non_present_csv.csv');
+        });
     </script>
 </body>
 </html>
