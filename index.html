@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Scanner de codes-barres</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+
+        #csv-container, #scan-result {
+            border: 2px solid #ccc;
+            margin: 20px;
+            padding: 10px;
+            width: 90%;
+            height: 200px;
+            overflow-y: auto;
+            resize: vertical;
+            background-color: #f9f9f9;
+        }
+
+        #camera-container {
+            width: 90%;
+            height: 300px;
+            margin: 20px;
+            display: none;
+        }
+
+        #camera {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        button {
+            padding: 10px 20px;
+            margin: 10px;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            cursor: pointer;
+            font-size: 16px;
+        }
+
+        .orange-highlight {
+            background-color: orange;
+        }
+    </style>
+</head>
+<body>
+
+    <h1>Scanner de codes-barres</h1>
+
+    <input type="file" id="csv-input" accept=".csv">
+    <div id="csv-container">Le contenu du fichier CSV sera affiché ici.</div>
+
+    <div id="camera-container">
+        <video id="camera"></video>
+        <button id="scan-btn">Scan</button>
+    </div>
+
+    <div id="scan-result">Les résultats des scans seront affichés ici.</div>
+
+    <button id="report-found-btn">Rapport des objets trouvés</button>
+    <button id="report-not-found-btn">Rapport des objets non trouvés</button>
+    <button id="report-extra-btn">Rapport des objets non présents dans le CSV</button>
+
+    <script src="https://unpkg.com/@zxing/library@latest"></script>
+    <script>
+        let csvData = [];
+        let scannedCodes = [];
+
+        document.getElementById('csv-input').addEventListener('change', function(event) {
+            const file = event.target.files[0];
+            const reader = new FileReader();
+
+            reader.onload = function(e) {
+                const csv = e.target.result;
+                csvData = csv.split('\n').map(row => row.split(','));
+                displayCSVContent(csvData);
+            };
+
+            reader.readAsText(file);
+        });
+
+        function displayCSVContent(data) {
+            const container = document.getElementById('csv-container');
+            container.innerHTML = '';
+            data.forEach((row, index) => {
+                const div = document.createElement('div');
+                div.textContent = row.join(' | ');
+                div.dataset.index = index;
+                container.appendChild(div);
+            });
+            document.getElementById('camera-container').style.display = 'block';
+        }
+
+        const codeReader = new ZXing.BrowserBarcodeReader();
+        const cameraElement = document.getElementById('camera');
+
+        document.getElementById('scan-btn').addEventListener('click', async function() {
+            try {
+                const result = await codeReader.decodeOnceFromVideoDevice(undefined, 'camera');
+                handleScanResult(result.text);
+            } catch (err) {
+                console.error(err);
+            }
+        });
+
+        function handleScanResult(code) {
+            const scanResultContainer = document.getElementById('scan-result');
+            const matchingRow = csvData.find(row => row[0] === code);
+
+            const resultDiv = document.createElement('div');
+            if (matchingRow) {
+                resultDiv.textContent = matchingRow.join(' | ');
+                scannedCodes.push(matchingRow);
+            } else {
+                resultDiv.textContent = `Code-barres non trouvé: ${code}`;
+                resultDiv.classList.add('orange-highlight');
+            }
+            scanResultContainer.appendChild(resultDiv);
+        }
+
+        document.getElementById('report-found-btn').addEventListener('click', function() {
+            generateReport(scannedCodes);
+        });
+
+        function generateReport(data) {
+            // Générer un fichier CSV à partir des objets trouvés (ou non trouvés).
+        }
+    </script>
+</body>
+</html>
