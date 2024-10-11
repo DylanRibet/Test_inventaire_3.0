@@ -192,11 +192,21 @@
                     yOffset += 10;
                 });
 
+                // Ajout d'une page si yOffset dépasse la limite de la page
+                if (yOffset > 270) {
+                    doc.addPage();
+                    yOffset = 10; // Réinitialiser l'offset
+                }
+
                 doc.save(filename);
             });
         }
 
         document.getElementById('report-found-btn').addEventListener('click', function() {
+            if (Object.keys(scannedCodes).length === 0) {
+                alert('Aucun objet trouvé à rapporter.');
+                return;
+            }
             generatePDF(scannedCodes, 'rapport_objets_trouves.pdf');
         });
 
@@ -208,10 +218,18 @@
                     missingCodes[code] = { row: row, quantity: 0 };
                 }
             });
+            if (Object.keys(missingCodes).length === 0) {
+                alert('Tous les objets sont trouvés.');
+                return;
+            }
             generatePDF(missingCodes, 'rapport_objets_non_trouves.pdf');
         });
 
         document.getElementById('report-extra-btn').addEventListener('click', function() {
+            if (Object.keys(notFoundCodes).length === 0) {
+                alert('Aucun objet non présent dans le CSV.');
+                return;
+            }
             generatePDF(notFoundCodes, 'rapport_objets_non_present_csv.pdf');
         });
     </script>
