@@ -149,7 +149,9 @@
         }
 
         function generateCSV(contentObject, filename) {
+            const header = csvData[0].join(',') + ',Quantité';
             const csvContent = "data:text/csv;charset=utf-8," + 
+                header + '\n' + 
                 Object.keys(contentObject).map(code => {
                     const row = contentObject[code];
                     return `${row.row.join(',')},${row.quantity}`;
