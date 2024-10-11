@@ -86,7 +86,6 @@
         let csvData = [];
         let scannedCodes = {};
         let notFoundCodes = {};
-        let nullCodesCount = {}; // Compteur pour les codes NULL
 
         document.getElementById('csv-input').addEventListener('change', function(event) {
             const file = event.target.files[0];
@@ -138,16 +137,13 @@
                 }
                 resultDiv.textContent = matchingRow.join(' | ') + ` (Quantité: ${scannedCodes[code].quantity})`;
             } else {
-                // Si le code-barres est NULL, on le compte comme un objet existant
-                const nullRow = csvData.find(row => row[0] === 'NULL');
-                if (nullRow) {
-                    nullCodesCount[nullRow.join(',')] = (nullCodesCount[nullRow.join(',')] || 0) + 1;
-                    resultDiv.textContent = `Objet sans code-barres: ${nullRow.join(',')} (Quantité: ${nullCodesCount[nullRow.join(',')]})`;
+                if (notFoundCodes[code]) {
+                    notFoundCodes[code].quantity += 1;
                 } else {
-                    notFoundCodes[code] = { row: [code], quantity: (notFoundCodes[code]?.quantity || 0) + 1 };
-                    resultDiv.textContent = `Code-barres non trouvé: ${code} (Quantité: ${notFoundCodes[code].quantity})`;
-                    resultDiv.classList.add('orange-highlight');
+                    notFoundCodes[code] = { row: [code], quantity: 1 };
                 }
+                resultDiv.textContent = `Code-barres non trouvé: ${code} (Quantité: ${notFoundCodes[code].quantity})`;
+                resultDiv.classList.add('orange-highlight');
             }
             scanResultContainer.appendChild(resultDiv);
         }
@@ -156,12 +152,9 @@
             const header = csvData[0].join(',') + ',Quantité';
             const csvContent = "data:text/csv;charset=utf-8," + 
                 header + '\n' + 
-                Object.keys(contentObject).flatMap(code => {
+                Object.keys(contentObject).map(code => {
                     const row = contentObject[code];
-                    return Array(row.quantity).fill(`${row.row.join(',')},1`); // Ajoute une ligne pour chaque occurrence
-                }).join('\n') + '\n' + 
-                Object.keys(nullCodesCount).flatMap(key => {
-                    return Array(nullCodesCount[key]).fill(`${key},1`); // Ajoute les lignes pour les objets NULL
+                    return `${row.row.join(',')},${row.quantity}`;
                 }).join('\n');
 
             const encodedUri = encodeURI(csvContent);
@@ -182,18 +175,17 @@
         });
 
         document.getElementById('report-not-found-btn').addEventListener('click', function() {
-            if (Object.keys(notFoundCodes).length === 0) {
-                alert('Aucun objet non trouvé.');
-                return;
-            }
-
             const missingCodes = {};
             csvData.forEach(row => {
                 const code = row[0];
                 if (!scannedCodes[code]) {
-                    missingCodes[code] = { row: row, quantity: 1 }; // Assure que chaque code manquant a une ligne
+                    missingCodes[code] = { row: row, quantity: 0 };
                 }
             });
+            if (Object.keys(missingCodes).length === 0) {
+                alert('Tous les objets sont trouvés.');
+                return;
+            }
             generateCSV(missingCodes, 'rapport_objets_non_trouves.csv');
         });
 
