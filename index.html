@@ -75,8 +75,8 @@
     <script src="https://unpkg.com/@zxing/library@latest"></script>
     <script>
         let csvData = [];
-        let scannedCodes = [];
-        let notFoundCodes = [];
+        let scannedCodes = {};
+        let notFoundCodes = {};
 
         document.getElementById('csv-input').addEventListener('change', function(event) {
             const file = event.target.files[0];
@@ -121,18 +121,29 @@
 
             const resultDiv = document.createElement('div');
             if (matchingRow) {
-                resultDiv.textContent = matchingRow.join(' | ');
-                scannedCodes.push(matchingRow);
+                if (scannedCodes[code]) {
+                    scannedCodes[code].quantity += 1;
+                } else {
+                    scannedCodes[code] = { row: matchingRow, quantity: 1 };
+                }
+                resultDiv.textContent = matchingRow.join(' | ') + ` (Quantité: ${scannedCodes[code].quantity})`;
             } else {
-                resultDiv.textContent = `Code-barres non trouvé: ${code}`;
+                if (notFoundCodes[code]) {
+                    notFoundCodes[code].quantity += 1;
+                } else {
+                    notFoundCodes[code] = { row: [code], quantity: 1 };
+                }
+                resultDiv.textContent = `Code-barres non trouvé: ${code} (Quantité: ${notFoundCodes[code].quantity})`;
                 resultDiv.classList.add('orange-highlight');
-                notFoundCodes.push([code]);
             }
             scanResultContainer.appendChild(resultDiv);
         }
 
-        function generateCSV(contentArray, filename) {
-            const csvContent = contentArray.map(e => e.join(",")).join("\n");
+        function generateCSV(contentObject, filename) {
+            const csvContent = Object.keys(contentObject).map(code => {
+                return [...contentObject[code].row, contentObject[code].quantity].join(',');
+            }).join("\n");
+            
             const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
             const link = document.createElement("a");
 
@@ -152,7 +163,13 @@
         });
 
         document.getElementById('report-not-found-btn').addEventListener('click', function() {
-            const missingCodes = csvData.filter(row => !scannedCodes.some(scanned => scanned[0] === row[0]));
+            const missingCodes = {};
+            csvData.forEach(row => {
+                const code = row[0];
+                if (!scannedCodes[code]) {
+                    missingCodes[code] = { row: row, quantity: 0 };
+                }
+            });
             generateCSV(missingCodes, 'rapport_objets_non_trouves.csv');
         });
 
