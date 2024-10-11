@@ -15,6 +15,12 @@
             justify-content: center;
         }
 
+        /* Styles pour l'en-tête */
+        header {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
         #csv-container, #scan-result {
             border: 2px solid #ccc;
             margin: 20px;
@@ -56,7 +62,10 @@
 </head>
 <body>
 
-    <h1>Scanner de codes-barres</h1>
+    <header>
+        <img src="https://groupebanco.com/wp-content/uploads/2020/10/logo_banco-300x71.png" alt="Logo Banco" style="width: 150px; height: auto;">
+        <h1>Scanner de codes-barres</h1>
+    </header>
 
     <input type="file" id="csv-input" accept=".csv">
     <div id="csv-container">Le contenu du fichier CSV sera affiché ici.</div>
@@ -71,6 +80,9 @@
     <button id="report-found-btn">Rapport des objets trouvés</button>
     <button id="report-not-found-btn">Rapport des objets non trouvés</button>
     <button id="report-extra-btn">Rapport des objets non présents dans le CSV</button>
+
+    <!-- Inclusion de jsPDF -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.4.0/jspdf.umd.min.js"></script>
 
     <script src="https://unpkg.com/@zxing/library@latest"></script>
     <script>
@@ -139,27 +151,53 @@
             scanResultContainer.appendChild(resultDiv);
         }
 
-        function generateCSV(contentObject, filename) {
-            const csvContent = Object.keys(contentObject).map(code => {
-                return [...contentObject[code].row, contentObject[code].quantity].join(',');
-            }).join("\n");
-            
-            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-            const link = document.createElement("a");
+        // Nouvelle fonction pour charger une image depuis une URL
+        function loadImageToBase64(url, callback) {
+            const img = new Image();
+            img.crossOrigin = 'Anonymous';
+            img.onload = function () {
+                const canvas = document.createElement('canvas');
+                canvas.width = img.width;
+                canvas.height = img.height;
+                const ctx = canvas.getContext('2d');
+                ctx.drawImage(img, 0, 0);
+                const dataURL = canvas.toDataURL('image/png');
+                callback(dataURL);
+            };
+            img.src = url;
+        }
 
-            if (link.download !== undefined) {
-                const url = URL.createObjectURL(blob);
-                link.setAttribute("href", url);
-                link.setAttribute("download", filename);
-                link.style.visibility = 'hidden';
-                document.body.appendChild(link);
-                link.click();
-                document.body.removeChild(link);
-            }
+        // Modifier la fonction generatePDF pour inclure l'image
+        function generatePDF(contentObject, filename) {
+            loadImageToBase64('https://groupebanco.com/wp-content/uploads/2020/10/logo_banco-300x71.png', function(imageData) {
+                const { jsPDF } = window.jspdf;
+                const doc = new jsPDF();
+
+                // Ajouter l'image
+                const pageWidth = doc.internal.pageSize.getWidth();
+                const imgWidth = 50; // Largeur de l'image en mm
+                const imgHeight = (71 / 300) * imgWidth; // Calcul de la hauteur en fonction du ratio de l'image
+                const imgX = (pageWidth - imgWidth) / 2; // Centrer l'image sur la page
+
+                doc.addImage(imageData, 'PNG', imgX, 10, imgWidth, imgHeight);
+
+                let yOffset = 30; // Départ après l'image
+
+                doc.text(`Rapport: ${filename.replace('.pdf', '')}`, 10, yOffset);
+                yOffset += 10;
+
+                Object.keys(contentObject).forEach(code => {
+                    const text = `Code-barres: ${contentObject[code].row[0]}, Nom: ${contentObject[code].row[1]}, Quantité: ${contentObject[code].quantity}`;
+                    doc.text(text, 10, yOffset);
+                    yOffset += 10;
+                });
+
+                doc.save(filename);
+            });
         }
 
         document.getElementById('report-found-btn').addEventListener('click', function() {
-            generateCSV(scannedCodes, 'rapport_objets_trouves.csv');
+            generatePDF(scannedCodes, 'rapport_objets_trouves.pdf');
         });
 
         document.getElementById('report-not-found-btn').addEventListener('click', function() {
@@ -170,11 +208,11 @@
                     missingCodes[code] = { row: row, quantity: 0 };
                 }
             });
-            generateCSV(missingCodes, 'rapport_objets_non_trouves.csv');
+            generatePDF(missingCodes, 'rapport_objets_non_trouves.pdf');
         });
 
         document.getElementById('report-extra-btn').addEventListener('click', function() {
-            generateCSV(notFoundCodes, 'rapport_objets_non_present_csv.csv');
+            generatePDF(notFoundCodes, 'rapport_objets_non_present_csv.pdf');
         });
     </script>
 </body>
